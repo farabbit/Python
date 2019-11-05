@@ -1,25 +1,26 @@
-# 闭包
+# Python函数闭包的思想及用途
 
 > 定义：闭包是指延展了作用域的函数，可访问定义体之外的**非全局变量**
 
-tag: 闭包，装饰器，高阶函数
+tag: 闭包，作用域，装饰器，高阶函数
 
 目录
 
 * 函数作用域
-* 在函数体内定义函数
-  * lambda函数
+  * global声明
+* 闭包
+  * 函数内的lambda函数也是闭包
 * 使函数在调用间保存状态
-  * nonlocal
-* 使用闭包的装饰器
-* 函数状态监视器
+  * nonlocal声明
+* 为装饰器加上参数
+* 处理被装饰函数的参数
+* 练习
 
-## 函数作用域
+## 全局变量的作用域
 
-### 全局变量的作用域
+请看下面这段代码：
 
 ```python
-# try to modify a global variable
 prev1, prev2 = 0, 1
 def fib():
     # global prev1, prev2
@@ -33,11 +34,11 @@ print("outside function: prev1: %d, prev2: %d" % (prev1, prev2))
 
 你可能注意到里代码中有一行被注释掉了的```global prev1, prev2```，我们将分别讨论加上这一行与否的情况
 
-依照正常的逻辑，在第一次print的时候，prev1与prev2应该是全局变量，因为我们还没有在函数体中定义它。
+依照一般的逻辑，在第一次print的时候，prev1与prev2应该是全局变量，因为我们还没有在函数体中定义它。
 
 下面一行的```prev1, prev2 = prev2, prev1+prev2```，“=”右边应当也是全局变量，而等号右边而“=”左边的prev1与prev2应该是局部变量，因为我们重新给它们重新赋值了，而Python正常情况下是不能修改全局变量的
 
-让我们看看运行结果
+以下是运行结果
 
 ```python
 Traceback (most recent call last):
@@ -51,7 +52,7 @@ UnboundLocalError: local variable 'prev1' referenced before assignment
 
 这可能有一些反直觉，我们在某行代码之后的行为，居然会影响到这行代码是如何被解释的！
 
-如果要正确地在函数体中更改全局变量的值，使用global声明这prev1, prev2为全局变量，就像我们在注释的那一行做的一样，取消这一行的注释然后看看运行结果：
+如果要正确地在函数体中更改全局变量的值，使用global声明这prev1, prev2为全局变量，就像我们在注释的那一行做的一样：```global prev1, prev2```，以下是运行结果
 
 ```python
 before: prev1: 0, prev2: 1
@@ -59,11 +60,11 @@ after: prev1: 1, prev2: 1
 outside function: prev1: 1, prev2: 1
 ```
 
-prev1, prev2的值确实被正确的更改了，这说明```global```关键字能将函数内对某个变量的控制能力扩展到函数外
+prev1, prev2的值确实被正确的更改了，这说明```global```关键字能将函数作用域内对某个变量的控制能力扩展到作用域外
 
 ## 闭包
 
-要实现一个闭包其实很简单，在函数内再定义一个函数，内部的那个函数就成为了一个闭包，这个内部函数可以访问定义它的函数的作用域
+要实现一个闭包很简单，在函数内再定义一个函数，内部的那个函数就成为了一个闭包，这个内部函数可以访问定义它的函数的作用域
 
 这下我们就回到了闭包的定义：闭包是指延展了作用域的函数，可访问定义体之外的**非全局变量**
 
@@ -83,11 +84,11 @@ phoneCall("Fan")
 我们在call函数中定义了一个函数answer，这个answer函数就像一个普通变量一样，作为call函数的返回值
 这个例子中answer函数可以访问call的局部变量caller
 
-事情还没完，我们在调用call函数之后，由于没有任何变量名指向它，这个函数的作用域和其中的变量（caller）应该被销毁了的，为何我们还能在下一行的answer函数中使用域中的值呢？由于phoneCall这个变量指向了call中的闭包answer，所以**函数的作用域必须等待其闭包销毁之后才会被销毁**。
+事情还没完，我们在调用完call函数之后，由于没有任何变量名指向它，这个函数的作用域和其中的变量（caller）应该被销毁了的，为何我们还能在下一行的answer函数中使用域中的值呢？由于phoneCall这个变量指向了call中的闭包answer，所以**函数的作用域必须等待其闭包销毁之后才会被销毁**。
 
 这个特性我们可以在多次函数调用间用于保存某些变量的值
 
-### lambda函数
+### 函数内的lambda函数也是一个闭包
 
 我们也可以使用lambda函数定义匿名函数来实现上面的功能，lambda函数的作用域也是一个闭包
 
@@ -144,7 +145,14 @@ def functionRegister(key):
 @functionRegister("ADD")
 def add(a,b): return a+b
 
-print(funcs) # {'ADD': <function add at 0x000001FDD314A378>}
+@functionRegister("MINUS")
+def add(a,b): return a+b
+
+print(funcs)
+"""
+{'ADD': <function add at 0x0000023B04B2B158>,
+'MINUS': <function add at 0x0000023B04B2B1E0>}
+"""
 ```
 
 ## 闭包用途三：处理被装饰函数的参数
@@ -202,10 +210,15 @@ if __name__ == "__main__":
             print("start init A")
 
     A(1,b=2)
-    A(1)
     """
     enter A.__init__(1, b=2)
     start init A
     exit A.__init__(1, b=2)
+    """
+    A(1)
+    """
+    enter A.__init__(1)
+    start init A
+    exit A.__init__(1)
     """
 ```
