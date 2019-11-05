@@ -34,7 +34,7 @@ print("outside function: prev1: %d, prev2: %d" % (prev1, prev2))
 
 你可能注意到里代码中有一行被注释掉了的```global prev1, prev2```，我们将分别讨论加上这一行与否的情况
 
-依照一般的逻辑，在第一次print的时候，prev1与prev2应该是全局变量，因为我们还没有在函数体中定义它。
+依照一般的逻辑，在第一次print的时候，prev1与prev2应该是全局变量，因为我们还没有在定义它。
 
 下面一行的```prev1, prev2 = prev2, prev1+prev2```，“=”右边应当也是全局变量，而等号右边而“=”左边的prev1与prev2应该是局部变量，因为我们重新给它们重新赋值了，而Python正常情况下是不能修改全局变量的
 
